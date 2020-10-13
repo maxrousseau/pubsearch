@@ -5,6 +5,7 @@
 
 #include <cpr/cpr.h>
 #include <fmt/core.h>
+#include <nlohmann/json.hpp>
 
 /*
 Replace the stupid std stream stuff with fmt because the other one is insane
@@ -13,7 +14,7 @@ easier
 
 Create citation struct write all citations to file
  @article{AuthorYear,
-       author = "",
+  nn     author = "",
        title = "",
        year = "",
        journal = "",
@@ -24,8 +25,8 @@ Create citation struct write all citations to file
 
 plan for this little project
 1. [x] build your query (some decent defaults for retmax and other categories)
-2. [x] get some paper IDs
-3. [x] get the summary of the papers
+2. [ ] vector of paper IDs
+3. [ ] get the summary of the papers
 4. [ ] get the references in bibtex fmt
 5. [ ] return to std_out, export (), ...
 
@@ -56,8 +57,8 @@ std::string buildQuery(std::string type)
 	ss << q.esearch << q.db << q.term << q.retmax << q.json;
   }
   //TODO make the IDlisit!!!
-  if (type == "summary") {
-	//	ss << q.efetch << q.db << q.id_list << q.text << q.abstract;
+  else if (type == "summary") {
+	// ss << q.efetch << q.db << q.id_list << q.text << q.abstract;
   }
   //TODO add the info statement 
   else {
@@ -65,7 +66,6 @@ std::string buildQuery(std::string type)
   }
 
   std::string query = ss.str();
-
 
   return query;
 }
@@ -82,10 +82,16 @@ void exportBibtex()
 
 int main()
 {
-  // little test
+
+    // little test
   std::string test = buildQuery("search");
   cpr::Response r = cpr::Get(cpr::Url{test});
-  std::cout << r.text;
+
+  auto json = nlohmann::json::parse(r.text);
+  std::cout << json.dump(4);
+  //auto id_list = json["esearchresult"];
+  //std::cout << id_list;
+  //std::cout << r.text;
 
   return 0;
 }

@@ -1,8 +1,14 @@
-build/
+bin/
+obj/
+.git/
+
 conan.lock
 conanbuildinfo.cmake
+conanbuildinfo.premake.lua
 conanbuildinfo.txt
-conaninfo.txt
+conxoaninfo.txt
 graph_info.json
+
+premake5
 Makefile
-*.py
+*.make
