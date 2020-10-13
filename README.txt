@@ -15,5 +15,6 @@ TBD
 build
 -----
 
-	$ mkdir build
-	$ cmake --build build
+	$ mkdir bin
+	$ premake5 gmake
+	$ make
