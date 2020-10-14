@@ -94,6 +94,7 @@ int main()
   auto id_list = json["esearchresult"]["idlist"];
   std::cout << id_list << "\n"; //ok im getting ID list, I need to turn this
 								//into a vector of strings...
+
   
   return 0;
 }
