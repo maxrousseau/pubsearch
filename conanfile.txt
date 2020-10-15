@@ -1,5 +1,5 @@
 [requires]
-cpr/1.5.0
+libcurl/7.72.0
 fmt/7.0.3
 cli11/1.9.1
 nlohmann_json/3.9.1
