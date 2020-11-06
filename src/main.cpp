@@ -55,7 +55,7 @@ struct Query
   std::string text = "retmode=text&";
   std::string id; //id=1,2,3 <- close with
 
-  std::string abstract = "rettype=abstract&";
+  // std::string abstract = "rettype=abstract&";
 };
 
 enum queryType { search, fetch, info };
@@ -135,6 +135,7 @@ size_t writeFunction(void *ptr, size_t size, size_t nmemb, std::string* data) {
   return size * nmemb;
 }
 
+
 std::string curlGet(std::string query_url)
 {
 
@@ -203,6 +204,7 @@ void getAbstract()
   split(abstract_response);
   
 }
+
 
 /*
 First hack TODO
