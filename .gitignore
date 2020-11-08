@@ -1,14 +1,1 @@
-bin/
-obj/
 .git/
-
-conan.lock
-conanbuildinfo.cmake
-conanbuildinfo.premake.lua
-conanbuildinfo.txt
-conaninfo.txt
-graph_info.json
-
-premake5
-Makefile
-*.make
