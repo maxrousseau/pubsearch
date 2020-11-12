@@ -145,10 +145,10 @@ func getAbstract(raw_input string) {
 }
 
 // getIdList from pubmed database and push to bibtex struct
-//func getIdList() { }
-
+// func getIdList() { }
 func main() {
 	var test string = buildQuery("search")
+
 	// TODO: get the ID list string and instantiate as global variable
 	fmt.Println(test)
 	var test_resp string = request(test)
