@@ -5,15 +5,14 @@ Maxime Rousseau 2020
 Plan for this little project
 1. [x] build your query (some decent defaults for retmax and other categories)
 2. [x] array of paper IDs
-3. [ ] get the summary of the papers -> format and place in bibtex struct
-4. [ ] get the references in bibtex fmt
-5. [ ] fmt output (info + abstract), export to bibtex, ...
-6. [ ] implement the cli arguments
+3. [x] get the summary of the papers -> format and place in bibtex struct
+4. [ ] fmt output (info + abstract), export to bibtex, ...
+5. [ ] implement the cli arguments
 
 esearch -> make id list -> fetch -> get abstracts -> summary -> build bibtex
 citatition -> format output (file and std output)
 
-Create citation struct write all citations to file
+Create citation struct write all citations to stdout
  @article{AuthorYear,
        author = "",
        title = "",
@@ -22,7 +21,7 @@ Create citation struct write all citations to file
        volume = "",
        number = "",
        page = "",
-	   abstract = "",
+       abstract = "",
  }
 
 First hack TODO
@@ -37,6 +36,7 @@ package main
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -144,6 +144,37 @@ func getAbstract(raw_input string) {
 
 }
 
+func parseXML(xml_stream string) {
+	type ESummaryResult struct {
+		XMLName xml.Name `xml:"eSummaryResult"`
+		Text    string   `xml:",chardata"`
+		DocSum  []struct {
+			Text string `xml:",chardata"`
+			ID   string `xml:"Id"`
+			Item []struct {
+				Text string `xml:",chardata"`
+				Name string `xml:"Name,attr"`
+				Type string `xml:"Type,attr"`
+				Item []struct {
+					Text string `xml:",chardata"`
+					Name string `xml:"Name,attr"`
+					Type string `xml:"Type,attr"`
+				} `xml:"Item"`
+			} `xml:"Item"`
+		} `xml:"DocSum"`
+	}
+
+	var esr ESummaryResult
+	xml.Unmarshal([]byte(xml_stream), &esr)
+	fmt.Println(esr.DocSum[0].Item[0].Name)
+	// basically you begin by filtering throught the articles by ID. Then you
+	// access the items of the articles, some of which are a lists (i.e. author
+	// lists, which require you to access the nested struct)
+
+	// TODO: I have to loop through these and create a unique bibtex struct for
+	// each and then output the list of bibtex structs to stdout.
+}
+
 // getIdList from pubmed database and push to bibtex struct
 //func getIdList() { }
 
@@ -168,7 +199,9 @@ func main() {
 	var test_summary string = buildQuery("summary")
 	var resp_summary string = request(test_summary)
 	fmt.Println(resp_summary)
+	fmt.Println(test_summary)
 	//TODO parse xml...
+	parseXML(resp_summary)
 
 	//parse entries to bibtex structs
 }
