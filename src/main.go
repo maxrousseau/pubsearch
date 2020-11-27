@@ -144,25 +144,37 @@ func getAbstract(raw_input string) {
 
 }
 
-func parseXML(xml_stream string) {
-	type ESummaryResult struct {
-		XMLName xml.Name `xml:"eSummaryResult"`
-		Text    string   `xml:",chardata"`
-		DocSum  []struct {
+type ESummaryResult struct {
+	XMLName xml.Name `xml:"eSummaryResult"`
+	Text    string   `xml:",chardata"`
+	DocSum  []struct {
+		Text string `xml:",chardata"`
+		ID   string `xml:"Id"`
+		Item []struct {
 			Text string `xml:",chardata"`
-			ID   string `xml:"Id"`
+			Name string `xml:"Name,attr"`
+			Type string `xml:"Type,attr"`
 			Item []struct {
 				Text string `xml:",chardata"`
 				Name string `xml:"Name,attr"`
 				Type string `xml:"Type,attr"`
-				Item []struct {
-					Text string `xml:",chardata"`
-					Name string `xml:"Name,attr"`
-					Type string `xml:"Type,attr"`
-				} `xml:"Item"`
 			} `xml:"Item"`
-		} `xml:"DocSum"`
-	}
+		} `xml:"Item"`
+	} `xml:"DocSum"`
+}
+
+type Bibtex struct {
+	title    string
+	author   []string
+	year     string
+	journal  string
+	volume   string
+	number   string
+	page     string
+	abstract string
+}
+
+func parseXML(xml_stream string) ESummaryResult {
 
 	var esr ESummaryResult
 	xml.Unmarshal([]byte(xml_stream), &esr)
@@ -173,6 +185,37 @@ func parseXML(xml_stream string) {
 
 	// TODO: I have to loop through these and create a unique bibtex struct for
 	// each and then output the list of bibtex structs to stdout.
+	return esr
+}
+
+func xml_to_bib(xml_struct ESummaryResult) {
+
+	fmt.Println(xml_struct.DocSum[0].Item[0].Name)
+	//parse entries to bibtex structs
+
+	var retmax = 10 //TODO: make this a global var so that the loop doesnt break when I change the request retmax
+	for i := 1; i < retmax; i++ {
+		fmt.Println(i)
+		fmt.Println(xml_struct.DocSum[i].Item[0].Text[:4])
+		fmt.Println(xml_struct.DocSum[i].Item[4].Text) //TODO: replace whitespace with underscore
+		fmt.Println(len(xml_struct.DocSum[i].Item[3].Item))
+		fmt.Println(xml_struct.DocSum[i].Item[3].Item)
+		/*
+
+		 @article{AuthorYear, >> item[0] (first 4 chars), item[4]
+		       author = "", >> item[3] -> list
+		       title = "", >> item[5]
+		       year = "", >> item[0] (first 4 chars)
+		       journal = "", >> item[2]
+		       volume = "", item[6]
+		       number = "", item[7]
+		       page = "", item[8]
+		       abstract = "", **get that from prev function
+		 }
+		*/
+	}
+
+	// return dict of bibtex structs
 }
 
 // getIdList from pubmed database and push to bibtex struct
@@ -201,7 +244,7 @@ func main() {
 	fmt.Println(resp_summary)
 	fmt.Println(test_summary)
 	//TODO parse xml...
-	parseXML(resp_summary)
+	var esr = parseXML(resp_summary)
+	xml_to_bib(esr)
 
-	//parse entries to bibtex structs
 }
