@@ -15,6 +15,4 @@ TBD
 build
 -----
 
-	$ mkdir bin
-	$ premake5 gmake
-	$ make
+TBD

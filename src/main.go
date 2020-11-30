@@ -13,7 +13,7 @@ esearch -> make id list -> fetch -> get abstracts -> summary -> build bibtex
 citatition -> format output (file and std output)
 
 Create citation struct write all citations to stdout
- @article{AuthorYear,
+@article{AuthorYear,
        author = "",
        title = "",
        year = "",
@@ -22,14 +22,7 @@ Create citation struct write all citations to stdout
        number = "",
        page = "",
        abstract = "",
- }
-
-First hack TODO
-1. I need to parse the abstracts and split them into strings according to their
-id (PMID present at the very end of each abstract)
-2. get the meta info for each article
-3. call getAbstract and getInfo for the set query and create a vector of Bibtex
-structs
+}
 */
 
 package main
@@ -137,11 +130,10 @@ func getIdlist(json_stream string) string {
 }
 
 // getAbstract ...
-func getAbstract(raw_input string) {
+func getAbstract(raw_input string) []string {
 	var abstract_arr []string = strings.Split(raw_input, "\n\n\n")
-	// ok this works well
-	fmt.Println(abstract_arr[1])
 
+	return abstract_arr
 }
 
 type ESummaryResult struct {
@@ -178,44 +170,61 @@ func parseXML(xml_stream string) ESummaryResult {
 
 	var esr ESummaryResult
 	xml.Unmarshal([]byte(xml_stream), &esr)
-	fmt.Println(esr.DocSum[0].Item[0].Name)
 	// basically you begin by filtering throught the articles by ID. Then you
 	// access the items of the articles, some of which are a lists (i.e. author
 	// lists, which require you to access the nested struct)
 
-	// TODO: I have to loop through these and create a unique bibtex struct for
-	// each and then output the list of bibtex structs to stdout.
 	return esr
 }
 
-func xml_to_bib(xml_struct ESummaryResult) {
+func xml_to_bib(xml_struct ESummaryResult, abstracts []string) []Bibtex {
 
-	fmt.Println(xml_struct.DocSum[0].Item[0].Name)
 	//parse entries to bibtex structs
-
 	var retmax = 10 //TODO: make this a global var so that the loop doesnt break when I change the request retmax
-	for i := 1; i < retmax; i++ {
-		fmt.Println(i)
-		fmt.Println(xml_struct.DocSum[i].Item[0].Text[:4])
-		fmt.Println(xml_struct.DocSum[i].Item[4].Text) //TODO: replace whitespace with underscore
-		fmt.Println(len(xml_struct.DocSum[i].Item[3].Item))
-		fmt.Println(xml_struct.DocSum[i].Item[3].Item)
-		/*
 
-		 @article{AuthorYear, >> item[0] (first 4 chars), item[4]
-		       author = "", >> item[3] -> list
-		       title = "", >> item[5]
-		       year = "", >> item[0] (first 4 chars)
-		       journal = "", >> item[2]
-		       volume = "", item[6]
-		       number = "", item[7]
-		       page = "", item[8]
-		       abstract = "", **get that from prev function
-		 }
-		*/
+	bib_arr := make([]Bibtex, retmax)
+
+	for i := 0; i < retmax; i++ {
+
+		num_author := len(xml_struct.DocSum[i].Item[3].Item)
+
+		for a := 0; a < num_author; a++ {
+
+			bib_arr[i].author = append(bib_arr[i].author, xml_struct.DocSum[i].Item[3].Item[a].Text)
+
+		}
+
+		bib_arr[i].title = xml_struct.DocSum[i].Item[5].Text
+		bib_arr[i].journal = xml_struct.DocSum[i].Item[2].Text
+		bib_arr[i].year = xml_struct.DocSum[i].Item[0].Text[:4]
+		bib_arr[i].volume = xml_struct.DocSum[i].Item[6].Text
+		bib_arr[i].number = xml_struct.DocSum[i].Item[7].Text
+		bib_arr[i].page = xml_struct.DocSum[i].Item[8].Text
+
+		bib_arr[i].abstract = abstracts[i]
+
 	}
 
-	// return dict of bibtex structs
+	return bib_arr
+}
+
+func ostream(lib []Bibtex) {
+	//	var s_array []string
+	retmax := 10
+
+	for i := 0; i < retmax; i++ {
+		s := fmt.Sprintf("@article{%s%s,\n", lib[i].author[len(lib[i].author)-1], lib[i].year)
+		s += fmt.Sprintf("author = '%s',\n", lib[i].author)
+		s += fmt.Sprintf("title = '%s',\n", lib[i].title)
+		s += fmt.Sprintf("year = '%s',\n", lib[i].year)
+		s += fmt.Sprintf("journal = '%s',\n", lib[i].journal)
+		s += fmt.Sprintf("volume = '%s',\n", lib[i].volume)
+		s += fmt.Sprintf("number = '%s',\n", lib[i].number)
+		s += fmt.Sprintf("page = '%s',\n}", lib[i].page)
+		fmt.Println(s) //TODO: OK this works, now concat strings
+	}
+
+	//ss string //final string stream to send to stdout
 }
 
 // getIdList from pubmed database and push to bibtex struct
@@ -224,27 +233,26 @@ func main() {
 	var test string = buildQuery("search")
 
 	// TODO: get the ID list string and instantiate as global variable
-	fmt.Println(test)
 	var test_resp string = request(test)
-
-	fmt.Println(test_resp)
 	id = getIdlist(test_resp)
 
-	fmt.Println(id)
 	var test_fetch string = buildQuery("fetch")
 	var resp_fetch string = request(test_fetch)
-	//	fmt.Println(resp_fetch)
-	getAbstract(resp_fetch)
+
+	var abstracts []string = getAbstract(resp_fetch)
 	//get abstract list split abstract by looking for \n\n (consecutive
 	//newlines) OK done
 
 	//get meta info about paper
 	var test_summary string = buildQuery("summary")
 	var resp_summary string = request(test_summary)
-	fmt.Println(resp_summary)
-	fmt.Println(test_summary)
-	//TODO parse xml...
+
+	//parse xml...
 	var esr = parseXML(resp_summary)
-	xml_to_bib(esr)
+	library := xml_to_bib(esr, abstracts) //array of library
+	//	fmt.Println(library)
+
+	//TODO: output bibtex stream
+	ostream(library)
 
 }
