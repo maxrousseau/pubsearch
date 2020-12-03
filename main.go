@@ -6,7 +6,7 @@ Plan for this little project
 1. [x] build your query (some decent defaults for retmax and other categories)
 2. [x] array of paper IDs
 3. [x] get the summary of the papers -> format and place in bibtex struct
-4. [ ] fmt output (info + abstract), export to bibtex, ...
+4. [x] fmt output (info + abstract), export to bibtex, ...
 5. [ ] implement the cli arguments
 
 esearch -> make id list -> fetch -> get abstracts -> summary -> build bibtex
@@ -23,6 +23,14 @@ Create citation struct write all citations to stdout
        page = "",
        abstract = "",
 }
+
+usage: pbsr [options]
+
+options:
+	-t (term)
+	-o (output type abstract/bibtex, default bibtex)
+	-h (help)
+
 */
 
 package main
@@ -30,6 +38,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -39,13 +48,16 @@ import (
 var id string //id=1,2,3 <- close with
 
 // buildQuery create a query url as a string
-func buildQuery(query_type string) string {
+func buildQuery(query_type, input_term string) string {
 	var esearch string = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?"
 	var efetch string = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?"
 	var esummary string = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?"
+
 	var db string = "db=pubmed&"
-	var term string = "term=orthodontics&"
+
+	var term string = fmt.Sprintf("term=%s&", input_term) //TODO: parse as cli arg
 	var retmax string = "retmax=10&"
+
 	var json string = "retmode=json" //close with
 	var text string = "retmode=text&"
 	var abstract string = "rettype=abstract&"
@@ -208,51 +220,69 @@ func xml_to_bib(xml_struct ESummaryResult, abstracts []string) []Bibtex {
 	return bib_arr
 }
 
-func ostream(lib []Bibtex) {
-	//	var s_array []string
+func ostream(lib []Bibtex) string {
+	var s_array []string
 	retmax := 10
 
 	for i := 0; i < retmax; i++ {
-		s := fmt.Sprintf("@article{%s%s,\n", lib[i].author[len(lib[i].author)-1], lib[i].year)
+		var lname []string = strings.Split(lib[i].author[len(lib[i].author)-1], " ")
+		s := fmt.Sprintf("@article{%s%s,\n", lname[0], lib[i].year) //get only the last name of the last author
+
 		s += fmt.Sprintf("author = '%s',\n", lib[i].author)
 		s += fmt.Sprintf("title = '%s',\n", lib[i].title)
 		s += fmt.Sprintf("year = '%s',\n", lib[i].year)
 		s += fmt.Sprintf("journal = '%s',\n", lib[i].journal)
 		s += fmt.Sprintf("volume = '%s',\n", lib[i].volume)
 		s += fmt.Sprintf("number = '%s',\n", lib[i].number)
-		s += fmt.Sprintf("page = '%s',\n}", lib[i].page)
-		fmt.Println(s) //TODO: OK this works, now concat strings
+		s += fmt.Sprintf("page = '%s',\n}\n\n", lib[i].page)
+		s_array = append(s_array, s)
 	}
 
-	//ss string //final string stream to send to stdout
+	ss := strings.Join(s_array, "") //final string stream to send to stdout
+	return ss
 }
 
 // getIdList from pubmed database and push to bibtex struct
 // func getIdList() { }
 func main() {
-	var test string = buildQuery("search")
 
-	// TODO: get the ID list string and instantiate as global variable
-	var test_resp string = request(test)
-	id = getIdlist(test_resp)
+	var user_input string
+	var output_type string
 
-	var test_fetch string = buildQuery("fetch")
-	var resp_fetch string = request(test_fetch)
+	flag.StringVar(&user_input, "t", "", "Term to be used for the pubmed search")
+	flag.StringVar(&output_type, "o", "bibtex", "Type of output - default is bibtex")
+	flag.Parse()
 
-	var abstracts []string = getAbstract(resp_fetch)
-	//get abstract list split abstract by looking for \n\n (consecutive
-	//newlines) OK done
+	//TODO: check flags for errors
+
+	var search_query string = buildQuery("search", user_input)
+
+	// TODO: get the ID list string and instantiate as global variable ?
+	var search_response string = request(search_query)
+	id = getIdlist(search_response)
+
+	var fetch_query string = buildQuery("fetch", user_input)
+	var fetch_response string = request(fetch_query)
+
+	var abstracts []string = getAbstract(fetch_response)
 
 	//get meta info about paper
-	var test_summary string = buildQuery("summary")
-	var resp_summary string = request(test_summary)
+	var summary_query string = buildQuery("summary", user_input)
+	var summary_response string = request(summary_query)
 
 	//parse xml...
-	var esr = parseXML(resp_summary)
+	var esr = parseXML(summary_response)
 	library := xml_to_bib(esr, abstracts) //array of library
-	//	fmt.Println(library)
 
-	//TODO: output bibtex stream
-	ostream(library)
+	//output bibtex stream
+	var bib_stream string = ostream(library)
+
+	if output_type == "bibtex" {
+		fmt.Println(bib_stream)
+	} else if output_type == "abstract" {
+		fmt.Println(abstracts)
+	} else {
+		fmt.Println("[ERROR] Unknown or unspecified output type ...")
+	}
 
 }
