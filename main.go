@@ -7,7 +7,7 @@ Plan for this little project
 2. [x] array of paper IDs
 3. [x] get the summary of the papers -> format and place in bibtex struct
 4. [x] fmt output (info + abstract), export to bibtex, ...
-5. [ ] implement the cli arguments
+5. [x] implement the cli arguments
 
 esearch -> make id list -> fetch -> get abstracts -> summary -> build bibtex
 citatition -> format output (file and std output)
@@ -221,6 +221,8 @@ func xml_to_bib(xml_struct ESummaryResult, abstracts []string) []Bibtex {
 }
 
 func ostream(lib []Bibtex) string {
+	//TODO: page formatting error
+	//TODO: author list formatting error
 	var s_array []string
 	retmax := 10
 
@@ -254,10 +256,11 @@ func main() {
 	flag.Parse()
 
 	//TODO: check flags for errors
+	//TODO: check the response objects to stop program if request fails
 
 	var search_query string = buildQuery("search", user_input)
 
-	// TODO: get the ID list string and instantiate as global variable ?
+	// TODO: get the ID list string and instantiate as global variable...why?
 	var search_response string = request(search_query)
 	id = getIdlist(search_response)
 
