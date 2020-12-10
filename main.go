@@ -257,6 +257,7 @@ func main() {
 
 	//TODO: check flags for errors
 	//TODO: check the response objects to stop program if request fails
+	//NOTE: to input multiple terms separate them by '+'
 
 	var search_query string = buildQuery("search", user_input)
 
