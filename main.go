@@ -221,8 +221,6 @@ func xml_to_bib(xml_struct ESummaryResult, abstracts []string) []Bibtex {
 }
 
 func ostream(lib []Bibtex) string {
-	//TODO: page formatting error
-	//TODO: author list formatting error
 	var s_array []string
 	retmax := 10
 
@@ -230,13 +228,13 @@ func ostream(lib []Bibtex) string {
 		var lname []string = strings.Split(lib[i].author[len(lib[i].author)-1], " ")
 		s := fmt.Sprintf("@article{%s%s,\n", lname[0], lib[i].year) //get only the last name of the last author
 
-		s += fmt.Sprintf("author = '%s',\n", lib[i].author)
+		s += fmt.Sprintf("author = '%s',\n", strings.Join(lib[i].author, ", "))
 		s += fmt.Sprintf("title = '%s',\n", lib[i].title)
 		s += fmt.Sprintf("year = '%s',\n", lib[i].year)
 		s += fmt.Sprintf("journal = '%s',\n", lib[i].journal)
 		s += fmt.Sprintf("volume = '%s',\n", lib[i].volume)
 		s += fmt.Sprintf("number = '%s',\n", lib[i].number)
-		s += fmt.Sprintf("page = '%s',\n}\n\n", lib[i].page)
+		s += fmt.Sprintf("page = '%s',\n}\n\n", lib[i].page) //TODO: page formatting error?
 		s_array = append(s_array, s)
 	}
 
@@ -251,14 +249,13 @@ func main() {
 	var user_input string
 	var output_type string
 
-	flag.StringVar(&user_input, "t", "", "Term to be used for the pubmed search")
+	flag.StringVar(&user_input, "t", "", "Term to be used for the pubmed search. \nInput multiple terms separate them by '+'.")
 	flag.StringVar(&output_type, "o", "bibtex", "Type of output - default is bibtex")
 	flag.Parse()
 
 	//TODO: check flags for errors
 	//TODO: check the response objects to stop program if request fails
-	//NOTE: to input multiple terms separate them by '+'
-
+	//NOTE:
 	var search_query string = buildQuery("search", user_input)
 
 	// TODO: get the ID list string and instantiate as global variable...why?
